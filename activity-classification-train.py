@@ -25,6 +25,9 @@ not complete.
 
 """
 
+from __future__ import division
+from sklearn.linear_model import LogisticRegression
+
 import os
 import sys
 import numpy as np
@@ -80,7 +83,7 @@ n_samples = 1000
 time_elapsed_seconds = (data[n_samples,0] - data[0,0]) / 1000
 sampling_rate = n_samples / time_elapsed_seconds
 
-feature_names = ["mean X", "mean Y", "mean Z"]
+feature_names = ["mean X", "mean Y", "mean Z", "var X", "var Y", "var Z", "zero crossing rate X", "zero crossing rate Y", "zero crossing rate Z", "magnitude mean", "magnitude var", "X entropy", "Y entropy", "Z entropy", "magnitude entropy"]
 class_names = ["Stationary", "Walking"]
 
 print("Extracting features and labels for window size {} and step size {}...".format(window_size, step_size))
@@ -135,12 +138,73 @@ n_classes = len(class_names)
 # TODO: Train and evaluate your decision tree classifier over 10-fold CV.
 # Report average accuracy, precision and recall metrics.
 
+clf = DecisionTreeClassifier(max_depth=3, max_features=5)
+
 cv = cross_validation.KFold(n, n_folds=10, shuffle=False, random_state=None)
+
+accuracyList = []
+precisionList = []
+recallList = []
 
 for i, (train_indexes, test_indexes) in enumerate(cv):
     print("Fold {}".format(i))
 
+    clf.fit(X[train_indexes], y[train_indexes])
+    conf = confusion_matrix(clf.predict(X[test_indexes]), y[test_indexes])
+
+    accuracy = sum(sum(np.multiply(conf, np.eye(n_classes)))) / sum(sum(conf))
+    accuracyList += [accuracy]
+
+    precision = [conf[i, i] / sum(conf[:, i]) for i in range(0, n_classes)]
+    precisionList += [precision]
+
+    recall = [conf[i, i] / sum(conf[i, :]) for i in range(0, n_classes)]
+    recallList += [recall]
+
+print "average accuracy:"
+print np.nanmean(accuracyList)
+
+print "average precision:"
+print np.nanmean(precisionList, axis=0)
+
+print "average recall:"
+print np.nanmean(recallList, axis=0)
+
+export_graphviz(clf, out_file='charts/3_5tree.dot')
+
 # TODO: Evaluate another classifier, i.e. SVM, Logistic Regression, k-NN, etc.
+
+logis = LogisticRegression()
+
+cv = cross_validation.KFold(n, n_folds=10, shuffle=False, random_state=None)
+
+accuracyList = []
+precisionList = []
+recallList = []
+
+for i, (train_indexes, test_indexes) in enumerate(cv):
+    print("Fold {}".format(i))
+
+    clf.fit(X[train_indexes], y[train_indexes])
+    conf = confusion_matrix(clf.predict(X[test_indexes]), y[test_indexes])
+
+    accuracy = sum(sum(np.multiply(conf, np.eye(n_classes)))) / sum(sum(conf))
+    accuracyList += [accuracy]
+
+    precision = [conf[i, i] / sum(conf[:, i]) for i in range(0, n_classes)]
+    precisionList += [precision]
+
+    recall = [conf[i, i] / sum(conf[i, :]) for i in range(0, n_classes)]
+    recallList += [recall]
+
+print "average accuracy:"
+print np.nanmean(accuracyList)
+
+print "average precision:"
+print np.nanmean(precisionList, axis=0)
+
+print "average recall:"
+print np.nanmean(recallList, axis=0)
 
 # TODO: Once you have collected data, train your best model on the entire
 # dataset. Then save it to disk as follows:
